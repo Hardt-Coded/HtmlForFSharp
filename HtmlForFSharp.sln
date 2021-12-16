@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlForFSharp", "HtmlForFSharp\HtmlForFSharp.csproj", "{CFF172D1-A319-4019-B19C-C013DC2728EF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Example", "Example", "{4968D157-E820-4125-8549-33B3C666EA9F}"
+	ProjectSection(SolutionItems) = preProject
+		Example.fs = Example.fs
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Debug|x86.ActiveCfg = Debug|x86
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Debug|x86.Build.0 = Debug|x86
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Release|x86.ActiveCfg = Release|x86
+		{CFF172D1-A319-4019-B19C-C013DC2728EF}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0385CFDC-C616-47C9-9A4D-3C5C85A8BF15}
+	EndGlobalSection
+EndGlobal
