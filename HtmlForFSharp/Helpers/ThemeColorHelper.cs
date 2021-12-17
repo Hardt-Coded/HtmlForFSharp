@@ -6,7 +6,7 @@ namespace HtmlForFSharp
 {
     internal static class ThemeColorHelper
     {
-        public static bool IsThemeLight => CurrentColorTheme == ThemeColor.Light;
+        public static bool IsThemeLight() => CurrentColorTheme == ThemeColor.Light;
         public static Color TextColor
         {
             get

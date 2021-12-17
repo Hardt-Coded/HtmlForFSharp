@@ -16,6 +16,8 @@ namespace HtmlForFSharp
         private readonly IClassificationType _htmlQuoteType;
         private readonly IClassificationType _htmlAttributeValueType;
         private readonly IClassificationType _htmlTextType;
+        private readonly IClassificationType _htmlLitAttributeNameType;
+        private readonly IClassificationType _htmlLitAttributeValueType;
         private readonly IClassifier _classifier;
 
         internal HtmlClassifier(IClassificationTypeRegistryService registry, IClassifier classifier)
@@ -26,6 +28,8 @@ namespace HtmlForFSharp
             _htmlQuoteType = registry.GetClassificationType(FormatNames.Quote);
             _htmlAttributeValueType = registry.GetClassificationType(FormatNames.AttributeValue);
             _htmlTextType = registry.GetClassificationType(FormatNames.Text);
+            _htmlLitAttributeNameType = registry.GetClassificationType(FormatNames.LitAttributeName);
+            _htmlLitAttributeValueType = registry.GetClassificationType(FormatNames.LitAttributeValue);
 
             _classifier = classifier;
         }
@@ -134,11 +138,13 @@ namespace HtmlForFSharp
             AfterCloseAngleBracket,
             AfterOpenTagSlash,
             AfterCloseTagSlash,
+            LitAttributeName,
+            //LitAttributeValue,
         }
 
         private bool IsNameChar(char c)
         {
-            return c == '_' || c == '-' || char.IsLetterOrDigit(c);
+            return c =='-' || c == '_' || char.IsLetterOrDigit(c);
         }
 
         //
@@ -205,7 +211,7 @@ namespace HtmlForFSharp
                     continue;
                 }
 
-                if (c=='{' || c=='}')
+                if ((c=='{' || c=='}') && state != State.LitAttributeName)
                 {
                     result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), cs.ClassificationType));
                     currentCharIndex++;
@@ -301,6 +307,12 @@ namespace HtmlForFSharp
                                 continuousMark = currentCharIndex;
                                 state = State.AttributeName;
                             }
+                            else if (c =='.' || c == '@')
+                            {
+                                state = State.LitAttributeName;
+                                continuousMark = currentCharIndex;
+                                result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeNameType));
+                            }
                             else if (c == '>')
                             {
                                 state = State.AfterCloseAngleBracket;
@@ -372,6 +384,56 @@ namespace HtmlForFSharp
                                 state = State.AfterOpenTagSlash;
                                 continuousMark = null;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlDelimiterType));
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                            break;
+                        }
+                    case State.LitAttributeName:
+                        {
+                            if (char.IsWhiteSpace(c))
+                            {
+                                if (continuousMark.HasValue)
+                                {
+                                    var length = currentCharIndex - continuousMark.Value;
+                                    result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + continuousMark.Value, length), _htmlLitAttributeNameType));
+                                    continuousMark = null;
+                                }
+                                state = State.LitAttributeName;
+                            }
+                            else if (IsNameChar(c))
+                            {
+                                state = State.LitAttributeName;
+                            }
+                            else if (c == '=')
+                            {
+                                if (continuousMark.HasValue)
+                                {
+                                    var attrNameStart = continuousMark.Value;
+                                    var attrNameLength = currentCharIndex - attrNameStart;
+                                    result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + attrNameStart, attrNameLength), _htmlLitAttributeNameType));
+                                }
+                                result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeNameType));
+                            }
+                            else if (c == '{')
+                            {
+                                if (continuousMark.HasValue)
+                                {
+                                    var attrNameStart = continuousMark.Value;
+                                    var attrNameLength = currentCharIndex - attrNameStart;
+                                    result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + attrNameStart, attrNameLength), _htmlLitAttributeValueType));
+                                }
+                                state = State.LitAttributeName;
+                                continuousMark = null;
+                                result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeValueType));
+                            }
+                            else if (c == '}')
+                            {
+                                state = State.InsideAttributeList;
+                                continuousMark = null;
+                                result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeValueType));
                             }
                             else
                             {
@@ -579,6 +641,11 @@ namespace HtmlForFSharp
 
                             break;
                         }
+
+
+                    
+
+
                     case State.AfterCloseAngleBracket:
                         {
                             if (c == '<')
@@ -678,6 +745,12 @@ namespace HtmlForFSharp
                         var start = continuousMark.Value;
                         var length = literal.Length - start;
                         result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + start, length), _htmlAttributeValueType));
+                    }
+                    else if (state == State.LitAttributeName)
+                    {
+                        var start = continuousMark.Value;
+                        var length = literal.Length - start;
+                        result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + start, length), _htmlLitAttributeNameType));
                     }
                     else if (state == State.InsideElement)
                     {

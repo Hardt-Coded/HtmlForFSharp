@@ -25,10 +25,22 @@ module Test =
         </div>"""
 
 
+    let state = "state"
+
+    let dispatch = id
+
     let htmlStr6 = html $""" 
         <div attr='{id htmlStr1}'>
             <p style='{id htmlStr1}' other-attribute="blabla"> 
                 I am inner Text 
+                <input type="text" .value={state} @input={fun _ -> dispatch "toll"}> 
+                {
+                    [
+                        "Hallo"
+                        html $"<div id='muh' .value={state}>Hallo</div>"
+                    
+                    ]
+                }
          </p>
     </div>"""
 
