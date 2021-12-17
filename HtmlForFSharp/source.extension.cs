@@ -11,7 +11,7 @@ namespace HtmlForFSharp
         public const string Name = "HtmlForFSharp";
         public const string Description = @"HTML Highlighting in FSharp strings";
         public const string Language = "en-US";
-        public const string Version = "0.1";
+        public const string Version = "0.0.1";
         public const string Author = "Daniel Hardt";
         public const string Tags = "html, fable, fsharp";
     }
