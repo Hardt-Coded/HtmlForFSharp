@@ -38,7 +38,7 @@ namespace HtmlForFSharp
 
                 return buffer.Properties.GetOrCreateSingletonProperty<HtmlClassifier>(delegate
                 {
-                    return new HtmlClassifier(ClassificationTypeRegistry, ClassifierAggregator.GetClassifier(buffer));
+                    return new HtmlClassifier(ClassificationTypeRegistry, ClassifierAggregator.GetClassifier(buffer), buffer);
                 });
             }
             finally

@@ -24,10 +24,21 @@ module Test =
             </p>
         </div>"""
 
-
+    
     let state = "state"
 
     let dispatch = id
+
+
+    let normalString2 = $"""
+        I am a normal string
+        {id htmlStr2}
+        <div> and so on </div>
+    """
+
+
+    let htmlStr11 = html$"""<div attr="muh">{id state}</div>"""
+    let htmlStr12 = html"""<div attr="muh">egal</div>"""
 
     let htmlStr6 = html $""" 
         <div attr='{id htmlStr1}'>

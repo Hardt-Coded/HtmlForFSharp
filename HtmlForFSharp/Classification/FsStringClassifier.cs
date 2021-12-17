@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 
@@ -19,8 +20,9 @@ namespace HtmlForFSharp
         private readonly IClassificationType _htmlLitAttributeNameType;
         private readonly IClassificationType _htmlLitAttributeValueType;
         private readonly IClassifier _classifier;
+        private readonly ITextBuffer _textBuffer;
 
-        internal HtmlClassifier(IClassificationTypeRegistryService registry, IClassifier classifier)
+        internal HtmlClassifier(IClassificationTypeRegistryService registry, IClassifier classifier, ITextBuffer textBuffer)
         {
             _htmlDelimiterType = registry.GetClassificationType(FormatNames.Delimiter);
             _htmlElementType = registry.GetClassificationType(FormatNames.Element);
@@ -32,25 +34,41 @@ namespace HtmlForFSharp
             _htmlLitAttributeValueType = registry.GetClassificationType(FormatNames.LitAttributeValue);
 
             _classifier = classifier;
+            _textBuffer = textBuffer;
         }
 
         private static bool IsHtmlIdentifier(ClassificationSpan x) =>
                 x.ClassificationType.Classification.ToLower() == "identifier"
                     && x.Span.GetText() == "html";
 
-        private bool multiLineHtmlOpen = false;
-        private int lastPosMultiLine = -1;
+        private static Regex htmlMultiLineBegin = new Regex("html([$@ ]*)(\"){3}", RegexOptions.Compiled);
+        private static List<SnapshotSpan> GetMultiLineTextSpans(ITextSnapshot snapshot)
+        {
+            var text = snapshot.GetText();
+            return 
+                htmlMultiLineBegin.Matches(text)
+                .Cast<Match>()
+                .Select(x=>
+                {
+                    var innerStringStart = x.Index + x.Length;
+                    var innerStringEnd = text.Substring(innerStringStart).IndexOf("\"\"\"");
+                    innerStringEnd = innerStringEnd < 0 ? text.Length - 1 : innerStringEnd;
+                    return new SnapshotSpan(snapshot, innerStringStart, innerStringEnd);    
+                })
+                .ToList();
+
+        }
+
+
 
         public IList<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
         {
-            // if you change one line, in a multiline construct,
-            // the next span is the beginning of the file
-            if (lastPosMultiLine > span.Start)
-                multiLineHtmlOpen = false;
-
             // Reset HTML State
+            var multiLineSpans = GetMultiLineTextSpans(span.Snapshot);
+            var isInsideMultiLineHtml = multiLineSpans.Any(x => x.OverlapsWith(span));
+
             (currentStringType, state) =
-                multiLineHtmlOpen
+                isInsideMultiLineHtml
                 ? (StringType.InterpolatedMultiLine, State.Default)
                 : (StringType.Unknown, State.Default);
 
@@ -58,11 +76,11 @@ namespace HtmlForFSharp
             var spanText = span.GetText();
 
             var spans = _classifier.GetClassificationSpans(span);
-            if (!spans.Any(IsHtmlIdentifier) && !multiLineHtmlOpen)
+            if (!spans.Any(IsHtmlIdentifier) && !isInsideMultiLineHtml)
                 return result;
 
             var htmlIdentifierIdx =
-                multiLineHtmlOpen
+                isInsideMultiLineHtml
                 ? 0
                 : spans.IndexOf(spans.First(IsHtmlIdentifier));
 
@@ -102,23 +120,7 @@ namespace HtmlForFSharp
                 
 
             }
-
-            var idxOfMultilineStringSign = spanText.IndexOf("\"\"\"");
-
-            if (multiLineHtmlOpen)
-            {
-                multiLineHtmlOpen = !spanText.Contains("\"\"\"");
-                
-            } else
-            {
-                multiLineHtmlOpen = spanText.Contains("\"\"\"")
-                    && !spanText.Substring(idxOfMultilineStringSign + 1).Contains("\"\"\"");
-                
-            }
-
-            lastPosMultiLine = multiLineHtmlOpen ? span.End : -1;
-
-
+            
             return result;
         }
 
