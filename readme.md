@@ -7,3 +7,4 @@ The Extension is based on this https://github.com/madskristensen/HtmlForJavascri
 
 ![image](https://user-images.githubusercontent.com/13096516/146612833-f77e971e-b118-4f16-b961-2a6b24d175c5.png)
 
+![image](https://user-images.githubusercontent.com/13096516/146614075-96feb17c-334b-4f73-9030-75fd6a84e13c.png)
