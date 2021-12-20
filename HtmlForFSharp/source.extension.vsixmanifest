@@ -4,9 +4,10 @@
         <Identity Id="HtmlForFSharp.eb476a64-a1b5-41a8-b0e3-ec6f171abf6b" Version="0.0.1" Language="en-US" Publisher="Daniel Hardt" />
         <DisplayName>HtmlForFSharp</DisplayName>
         <Description xml:space="preserve">HTML Highlighting in FSharp strings</Description>
+        <License>Resources\LICENSE</License>
         <Icon>Resources\Icon.png</Icon>
         <PreviewImage>Resources\Icon.png</PreviewImage>
-        <Tags>html, fable, fsharp</Tags>
+        <Tags>html, fable, fsharp, fable-lit, lit</Tags>
     </Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">

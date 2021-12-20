@@ -13,6 +13,6 @@ namespace HtmlForFSharp
         public const string Language = "en-US";
         public const string Version = "0.0.1";
         public const string Author = "Daniel Hardt";
-        public const string Tags = "html, fable, fsharp";
+        public const string Tags = "html, fable, fsharp, fable-lit, lit";
     }
 }
