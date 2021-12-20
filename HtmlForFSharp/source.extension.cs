@@ -7,9 +7,9 @@ namespace HtmlForFSharp
 {
     internal sealed partial class Vsix
     {
-        public const string Id = "HtmlForFSharp.eb476a64-a1b5-41a8-b0e3-ec6f171abf6b";
-        public const string Name = "HtmlForFSharp";
-        public const string Description = @"HTML Highlighting in FSharp strings";
+        public const string Id = "HtmlForFSharpLitTemplate";
+        public const string Name = "Html for F# (Lit Template)";
+        public const string Description = @"Hightlighting HTML String for (Lit) HTML String Templates";
         public const string Language = "en-US";
         public const string Version = "0.0.1";
         public const string Author = "Daniel Hardt";
