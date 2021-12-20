@@ -40,11 +40,16 @@ module Test =
     let htmlStr11 = html$"""<div attr="muh">{id state}</div>"""
     let htmlStr12 = html"""<div attr="muh">egal</div>"""
 
+    type Msg =
+    | AweSomeMessage
+    | OtherAwesomeMessage
+
     let htmlStr6 = html $""" 
         <div attr='{id htmlStr1}'>
             <p style='{id htmlStr1}' other-attribute="blabla"> 
                 I am inner Text 
-                <input type="text" .value={state} @input={fun _ -> dispatch "toll"}> 
+                <input type="text" .value={state} @input={fun _ -> dispatch AweSomeMessage}>
+                <input type="text" .value={state} @input={fun _ -> id "toll" }>
                 {
                     [
                         "Hallo"

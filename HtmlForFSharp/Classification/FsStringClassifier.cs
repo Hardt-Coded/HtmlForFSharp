@@ -94,24 +94,17 @@ namespace HtmlForFSharp
                 // Only apply our rules if we found a string literal
                 if (csClass == "string")
                 {
-                    if (cs.Span.Length > 2)
-                    {
-                        // the quotes are excluded in ScanLiteral
-                        List<ClassificationSpan> classification = ScanLiteral(cs);
+                    List<ClassificationSpan> classification = ScanLiteral(cs);
 
-                        if (classification != null)
-                        {
-                            result.AddRange(classification);
-                        }
-                        else
-                        {
-                            result.Add(cs);
-                        }
+                    if (classification != null)
+                    {
+                        result.AddRange(classification);
                     }
                     else
                     {
                         result.Add(cs);
                     }
+                    
                 }
                 else
                 {
@@ -141,7 +134,7 @@ namespace HtmlForFSharp
             AfterOpenTagSlash,
             AfterCloseTagSlash,
             LitAttributeName,
-            //LitAttributeValue,
+            LitAttributeValue,
         }
 
         private bool IsNameChar(char c)
@@ -184,7 +177,7 @@ namespace HtmlForFSharp
                 ? (StringType.InterpolatedMultiLine, State.Default)
                 : literal.StartsWith("$\"")
                     ? (StringType.InterpolatedSimple, State.Default)
-                    : literal.StartsWith("\"\"\"") || literal.StartsWith("@\"") || literal.StartsWith("\"")
+                    : currentStringType != StringType.InterpolatedMultiLine && (literal.StartsWith("\"\"\"") || literal.StartsWith("@\"") || literal.StartsWith("\""))
                         ? (StringType.SimpleOrMultiline, State.Default)
                         // next part of interpolated string
                         : literal.StartsWith("}")
@@ -213,7 +206,7 @@ namespace HtmlForFSharp
                     continue;
                 }
 
-                if ((c=='{' || c=='}') && state != State.LitAttributeName)
+                if ((c=='{' || c=='}') && state != State.LitAttributeValue )
                 {
                     result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), cs.ClassificationType));
                     currentCharIndex++;
@@ -417,7 +410,28 @@ namespace HtmlForFSharp
                                     var attrNameLength = currentCharIndex - attrNameStart;
                                     result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + attrNameStart, attrNameLength), _htmlLitAttributeNameType));
                                 }
+                                continuousMark = null;
+                                state = State.LitAttributeValue;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeNameType));
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                            break;
+                        }
+                    case State.LitAttributeValue:
+                        {
+                            if (char.IsWhiteSpace(c))
+                            {
+                                currentCharIndex++;
+                                continue;
+                            }
+                            // in case of a string inside the interpolation
+                            else if (IsNameChar(c) || c=='\"')
+                            {
+                                currentCharIndex++;
+                                continue;
                             }
                             else if (c == '{')
                             {
@@ -427,12 +441,18 @@ namespace HtmlForFSharp
                                     var attrNameLength = currentCharIndex - attrNameStart;
                                     result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + attrNameStart, attrNameLength), _htmlLitAttributeValueType));
                                 }
-                                state = State.LitAttributeName;
-                                continuousMark = null;
+                                state = State.LitAttributeValue;
+                                continuousMark = currentCharIndex;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeValueType));
                             }
                             else if (c == '}')
                             {
+                                if (continuousMark.HasValue)
+                                {
+                                    var attrNameStart = continuousMark.Value;
+                                    var attrNameLength = currentCharIndex - attrNameStart;
+                                    result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + attrNameStart, attrNameLength), _htmlLitAttributeValueType));
+                                }
                                 state = State.InsideAttributeList;
                                 continuousMark = null;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeValueType));
@@ -754,6 +774,12 @@ namespace HtmlForFSharp
                         var length = literal.Length - start;
                         result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + start, length), _htmlLitAttributeNameType));
                     }
+                    else if (state == State.LitAttributeValue)
+                    {
+                        var start = continuousMark.Value;
+                        var length = literal.Length - start;
+                        result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + start, length), _htmlLitAttributeNameType));
+                    }
                     else if (state == State.InsideElement)
                     {
                         var start = continuousMark.Value;
@@ -768,7 +794,7 @@ namespace HtmlForFSharp
             (currentStringType, state) =
                 literal.Trim().EndsWith("\"\"\"")
                 ? (StringType.Unknown, State.Default)
-                : literal.Trim().EndsWith("\"")
+                : currentStringType != StringType.InterpolatedMultiLine && literal.Trim().EndsWith("\"")
                     ? (StringType.Unknown, State.Default)
                     : (currentStringType, state);
 
