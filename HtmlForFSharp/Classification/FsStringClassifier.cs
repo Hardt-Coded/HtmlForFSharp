@@ -41,22 +41,27 @@ namespace HtmlForFSharp
                 x.ClassificationType.Classification.ToLower() == "identifier"
                     && x.Span.GetText() == "html";
 
-        private static Regex htmlMultiLineBegin = new Regex("html([$@ ]*)(\"){3}", RegexOptions.Compiled);
-        private static List<SnapshotSpan> GetMultiLineTextSpans(ITextSnapshot snapshot)
+        private static Regex htmlTemplateBeginRegex = new Regex(@"((html((\n|\r|\r\n| )*)([$@]*)(""){3})|(html(\n|\r|\r\n| )+[$@""]+))", RegexOptions.Compiled);
+        private static List<SnapshotSpan> GetHtmlTemplateSpans(ITextSnapshot snapshot)
         {
             var text = snapshot.GetText();
             return 
-                htmlMultiLineBegin.Matches(text)
+                htmlTemplateBeginRegex.Matches(text)
                 .Cast<Match>()
                 .Select(x=>
                 {
+                    
                     var innerStringStart = x.Index + x.Length;
-                    var innerStringEnd = text.Substring(innerStringStart).IndexOf("\"\"\"");
+                    var innerStringEnd =
+                        x.Value.Contains("\"\"\"")
+                        ? text.Substring(innerStringStart).IndexOf("\"\"\"")
+                        // end of line
+                        : text.Substring(innerStringStart).IndexOf("\r\n");
                     innerStringEnd = innerStringEnd < 0 ? text.Length - 1 : innerStringEnd;
-                    return new SnapshotSpan(snapshot, innerStringStart, innerStringEnd);    
+                    return new SnapshotSpan(snapshot, innerStringStart, innerStringEnd);
+                    
                 })
                 .ToList();
-
         }
 
 
@@ -64,11 +69,11 @@ namespace HtmlForFSharp
         public IList<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
         {
             // Reset HTML State
-            var multiLineSpans = GetMultiLineTextSpans(span.Snapshot);
-            var isInsideMultiLineHtml = multiLineSpans.Any(x => x.OverlapsWith(span));
+            var htmlTemplateSpans = GetHtmlTemplateSpans(span.Snapshot);
+            var isInsideHtmlTemplate = htmlTemplateSpans.Any(x => x.OverlapsWith(span));
 
             (currentStringType, state) =
-                isInsideMultiLineHtml
+                isInsideHtmlTemplate
                 ? (StringType.InterpolatedMultiLine, State.Default)
                 : (StringType.Unknown, State.Default);
 
@@ -76,15 +81,12 @@ namespace HtmlForFSharp
             var spanText = span.GetText();
 
             var spans = _classifier.GetClassificationSpans(span);
-            if (!spans.Any(IsHtmlIdentifier) && !isInsideMultiLineHtml)
+            if (!isInsideHtmlTemplate)
                 return result;
 
-            var htmlIdentifierIdx =
-                isInsideMultiLineHtml
-                ? 0
-                : spans.IndexOf(spans.First(IsHtmlIdentifier));
-
-            spans = spans.Skip(htmlIdentifierIdx).ToList();
+            spans = 
+                spans
+                .Where(s => htmlTemplateSpans.Any(x => x.OverlapsWith(s.Span))).ToList();
 
             
             foreach (ClassificationSpan cs in spans)
@@ -146,13 +148,6 @@ namespace HtmlForFSharp
         private State state = State.Default;
         private StringType currentStringType = StringType.Unknown;
 
-
-        private enum HtmlIdentifierState {
-            NoHtml,
-            HtmlFound,
-            NoHtmlButInsideInterpolation,
-            HtmlInsideInterpolation
-        }
 
         private enum StringType
         {

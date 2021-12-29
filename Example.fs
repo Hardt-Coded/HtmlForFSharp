@@ -30,7 +30,7 @@ module Test =
     let dispatch = id
 
 
-    let normalString2 = $"""
+    let normalString2 = $""" 
         I am a normal string
         {id htmlStr2}
         <div> and so on </div>
@@ -64,12 +64,30 @@ module Test =
     let htmlStr7 = html $""" <div attr='{id htmlStr1}'>I am inner Text</div> """
 
 
-    let htmlStr8 = html $""" 
-    <div attr='{id htmlStr1}'>
-        <p style='{id htmlStr1}' other-attribute="blabla">
-            I am inner Text 
-     </p>
-    </div>"""
+    let htmlStr7a = 
+        html 
+            $" <div attr='{id htmlStr1}'>I am inner Text</div> "
+
+    let htmlStr7b = 
+        html 
+            @" <div attr='something'>I am inner Text</div> "  
+
+    let htmlStr7c = 
+        html 
+            " <div attr='bla'>I am inner Text</div> "
+
+
+    let htmlStr8 = 
+        html 
+            $""" 
+            <div line-feed='true' attr='{id htmlStr1}'>
+                <p style='{id htmlStr1}' other-attribute="blabla">
+                    I am inner Text 
+                </p>
+            </div>
+            
+            <div id='1234'></div>
+            """
 
 
     
