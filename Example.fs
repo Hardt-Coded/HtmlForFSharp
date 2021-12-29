@@ -84,6 +84,8 @@ module Test =
                 <p style='{id htmlStr1}' other-attribute="blabla">
                     I am inner Text 
                 </p>
+                <input type="text" .value={state} @input={fun _ -> dispatch AweSomeMessage}>
+                <input type="text" .value={state} @input={fun _ -> id "toll" }>
             </div>
             
             <div id='1234'></div>
