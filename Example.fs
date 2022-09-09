@@ -91,24 +91,26 @@ module Test =
             <div id='1234'></div>
             """
 
+    /// This example is bugged due to the `?` attribute (fixed in PR #2)
     let questionMarkAttribute = 
         html $"""
-        <div anchor="external-anchor" placement="right-start" distance="4" ?active={model.IsContextMenuVisible}>
+        <div anchor="external-anchor" placement="right-start" distance="4" ?active={true}>
         </div>
         """
 
+    /// This example is bugged due to the boolean attribute `pill` without an `=`.
     let booleanAttributeBeforeEndOfAttributes = 
         html $"""
         <sl-button variant="primary" pill @click={Ev (fun _ -> ())}>Back to projects</sl-button>
         """
 
+    /// This example is bugged due to the attributes spanning multiple lines
     let multilineAttributes = 
         html $"""
         <sl-input 
             style="width: 300px;"
             label="Please enter a username:"
-            value={ctx.Username} 
-            @sl-change={Ev (fun e -> AppContext.dispatch (AppContext.SetUsername e.target.Value))}>
+            value={123} 
         </sl-input>
         """
     
