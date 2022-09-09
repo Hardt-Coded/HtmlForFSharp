@@ -91,5 +91,24 @@ module Test =
             <div id='1234'></div>
             """
 
+    let questionMarkAttribute = 
+        html $"""
+        <div anchor="external-anchor" placement="right-start" distance="4" ?active={model.IsContextMenuVisible}>
+        </div>
+        """
 
+    let booleanAttributeBeforeEndOfAttributes = 
+        html $"""
+        <sl-button variant="primary" pill @click={Ev (fun _ -> ())}>Back to projects</sl-button>
+        """
+
+    let multilineAttributes = 
+        html $"""
+        <sl-input 
+            style="width: 300px;"
+            label="Please enter a username:"
+            value={ctx.Username} 
+            @sl-change={Ev (fun e -> AppContext.dispatch (AppContext.SetUsername e.target.Value))}>
+        </sl-input>
+        """
     

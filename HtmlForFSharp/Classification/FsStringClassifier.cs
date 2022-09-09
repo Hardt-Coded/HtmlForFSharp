@@ -297,7 +297,7 @@ namespace HtmlForFSharp
                                 continuousMark = currentCharIndex;
                                 state = State.AttributeName;
                             }
-                            else if (c =='.' || c == '@')
+                            else if (c =='.' || c == '@' || c == '?')
                             {
                                 state = State.LitAttributeName;
                                 continuousMark = currentCharIndex;
