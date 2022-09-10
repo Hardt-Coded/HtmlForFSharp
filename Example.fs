@@ -110,7 +110,7 @@ module Test =
         <sl-input 
             style="width: 300px;"
             label="Please enter a username:"
-            value={123} 
+            value={123}>
         </sl-input>
         """
     

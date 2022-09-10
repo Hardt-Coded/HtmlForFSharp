@@ -74,7 +74,7 @@ namespace HtmlForFSharp
 
             (currentStringType, state) =
                 isInsideHtmlTemplate
-                ? (StringType.InterpolatedMultiLine, State.Default)
+                ? (StringType.InterpolatedMultiLine, state)
                 : (StringType.Unknown, State.Default);
 
             var result = new List<ClassificationSpan>();
@@ -145,7 +145,7 @@ namespace HtmlForFSharp
         }
 
         //
-        private State state = State.Default;
+        private State state { get; set; } = State.Default;
         private StringType currentStringType = StringType.Unknown;
 
 
@@ -195,13 +195,16 @@ namespace HtmlForFSharp
                 var prevChar = currentCharIndex > 0 ? literal[currentCharIndex - 1] : '\0';
 
                 //check is quote of start and end
-                if ((currentCharIndex == 0 || currentCharIndex == (literal.Length-1))  && IsQuote(c))
+                if ((currentCharIndex == 0 || currentCharIndex == (literal.Length-1))  && IsQuote(c) && state != State.AttributeValue)
                 {
                     currentCharIndex++;
                     continue;
                 }
 
-                if ((c=='{' || c=='}') && state != State.LitAttributeValue )
+                if ((c=='{' || c=='}') 
+                    && state != State.LitAttributeValue 
+                    && state != State.AfterAttributeEqualSign
+                    )
                 {
                     result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), cs.ClassificationType));
                     currentCharIndex++;
@@ -288,7 +291,7 @@ namespace HtmlForFSharp
                         }
                     case State.InsideAttributeList:
                         {
-                            if (char.IsWhiteSpace(c))
+                            if (char.IsWhiteSpace(c) || c == '\r' || c == '\n')
                             {
 
                             }
@@ -475,6 +478,12 @@ namespace HtmlForFSharp
                                 continuousMark = null;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlDelimiterType));
                             }
+                            else if (c == '.' || c == '@' || c == '?')
+                            {
+                                state = State.LitAttributeName;
+                                continuousMark = currentCharIndex;
+                                result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlLitAttributeNameType));
+                            }
                             else if (c == '/')
                             {
                                 state = State.AfterOpenTagSlash;
@@ -501,6 +510,11 @@ namespace HtmlForFSharp
                             {
                                 continuousMark = currentCharIndex;
                                 state = State.AttributeValue;
+                            }
+                            else if (c=='{')
+                            {
+                                continuousMark = currentCharIndex;
+                                state = State.LitAttributeValue;
                             }
                             else if (c == '\"' && !literal.StartsWith("@"))
                             {
@@ -618,7 +632,7 @@ namespace HtmlForFSharp
                                 insideDoubleQuote = true;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlQuoteType));
                             }
-                            else if (c == '\"' && literal.StartsWith("@") && prevChar == '\"')
+                            else if (c == '\"' && literal.Trim().StartsWith("@") && prevChar == '\"')
                             {
                                 state = State.InsideAttributeList;
                                 insideDoubleQuote = false;
