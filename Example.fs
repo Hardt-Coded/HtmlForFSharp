@@ -113,4 +113,19 @@ module Test =
             value={123}>
         </sl-input>
         """
+
+
+    /// comment in html
+    let comment = 
+        html $"""
+        <!-- I am a comment -->
+
+        <sl-input 
+            style="width: 300px;"
+            label="Please enter a username:"
+            value={123}>
+        </sl-input>
+        """
+
+    let comment2 = html $"<!-- I am a comment --><div></div>"
     

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
+using stdole;
 
 namespace HtmlForFSharp
 {
@@ -19,6 +20,7 @@ namespace HtmlForFSharp
         private readonly IClassificationType _htmlTextType;
         private readonly IClassificationType _htmlLitAttributeNameType;
         private readonly IClassificationType _htmlLitAttributeValueType;
+        private readonly IClassificationType _htmlComment;
         private readonly IClassifier _classifier;
         private readonly ITextBuffer _textBuffer;
 
@@ -32,6 +34,7 @@ namespace HtmlForFSharp
             _htmlTextType = registry.GetClassificationType(FormatNames.Text);
             _htmlLitAttributeNameType = registry.GetClassificationType(FormatNames.LitAttributeName);
             _htmlLitAttributeValueType = registry.GetClassificationType(FormatNames.LitAttributeValue);
+            _htmlComment = registry.GetClassificationType(FormatNames.Comment);
 
             _classifier = classifier;
             _textBuffer = textBuffer;
@@ -50,17 +53,23 @@ namespace HtmlForFSharp
                 .Cast<Match>()
                 .Select(x=>
                 {
-                    
-                    var innerStringStart = x.Index + x.Length;
-                    var innerStringEnd =
-                        x.Value.Contains("\"\"\"")
-                        ? text.Substring(innerStringStart).IndexOf("\"\"\"")
-                        // end of line
-                        : text.Substring(innerStringStart).IndexOf("\r\n");
-                    innerStringEnd = innerStringEnd < 0 ? text.Length - 1 : innerStringEnd;
-                    return new SnapshotSpan(snapshot, innerStringStart, innerStringEnd);
-                    
+                    try
+                    {
+                        var innerStringStart = x.Index + x.Length;
+                        var innerStringEnd =
+                            x.Value.Contains("\"\"\"")
+                            ? text.Substring(innerStringStart).IndexOf("\"\"\"")
+                            // end of line
+                            : text.Substring(innerStringStart).IndexOf("\r\n");
+                        innerStringEnd = innerStringEnd < 0 ? text.Length - 1 : innerStringEnd;
+                        return new SnapshotSpan(snapshot, innerStringStart, innerStringEnd);
+                    }
+                    catch (Exception)
+                    {
+                        return default;
+                    }
                 })
+                .Where(x=>x!=default)
                 .ToList();
         }
 
@@ -137,6 +146,7 @@ namespace HtmlForFSharp
             AfterCloseTagSlash,
             LitAttributeName,
             LitAttributeValue,
+            Comment
         }
 
         private bool IsNameChar(char c)
@@ -193,6 +203,7 @@ namespace HtmlForFSharp
             {
                 var c = literal[currentCharIndex];
                 var prevChar = currentCharIndex > 0 ? literal[currentCharIndex - 1] : '\0';
+                char pChar(int idx) => currentCharIndex > idx - 1 ? literal[currentCharIndex - idx] : '\0';
 
                 //check is quote of start and end
                 if ((currentCharIndex == 0 || currentCharIndex == (literal.Length-1))  && IsQuote(c) && state != State.AttributeValue)
@@ -230,6 +241,9 @@ namespace HtmlForFSharp
                             {
                                 continuousMark = currentCharIndex;
                                 state = State.ElementName;
+
+                                
+
                             }
                             else if (c == '/')
                             {
@@ -237,9 +251,51 @@ namespace HtmlForFSharp
                                 continuousMark = null;
                                 result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex, 1), _htmlDelimiterType));
                             }
+                            // Possible Comment
+                            else if (c == '!')
+                            {
+                                
+                                state = State.Comment;
+                                continuousMark = currentCharIndex;
+                                var prevRes = result.Where(x=>x.Span.GetText()=="<").LastOrDefault();
+                                if (prevRes != null)
+                                    result.Remove(prevRes);
+                                result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex - 1, 2), _htmlComment));
+                                
+                            }
                             else
                             {
                                 return null;
+                            }
+                            break;
+                        }
+                    case State.Comment:
+                        {
+                            // End Comment
+                            if (c == '>')
+                            {
+                                
+
+                                
+                                if (pChar(1) == '-' && pChar(2) == '-')
+                                {
+                                    if (continuousMark.HasValue)
+                                    {
+                                        var attrNameStart = continuousMark.Value;
+                                        var attrNameLength = currentCharIndex - attrNameStart;
+                                        result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + attrNameStart, attrNameLength), _htmlComment));
+                                    }
+
+                                    state = State.AfterCloseAngleBracket;
+                                    continuousMark = null;
+                                    result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + currentCharIndex - 3, 4), _htmlComment));
+                                }
+                            }
+                            else
+                            {
+                                // In case we have a comment on the next line an the literal is new
+                                if (currentCharIndex == 0)
+                                    continuousMark = currentCharIndex;
                             }
                             break;
                         }
@@ -794,6 +850,12 @@ namespace HtmlForFSharp
                         var start = continuousMark.Value;
                         var length = literal.Length - start;
                         result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + start, length), cs.ClassificationType));
+                    }
+                    else if (state == State.Comment)
+                    {
+                        var start = continuousMark.Value;
+                        var length = literal.Length - start;
+                        result.Add(new ClassificationSpan(new SnapshotSpan(span.Start + start, length), _htmlComment));
                     }
                 }
             }

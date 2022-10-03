@@ -15,6 +15,7 @@ namespace HtmlForFSharp
         public const string Text = "HtmlText";
         public const string LitAttributeName = "LitAttributeName";
         public const string LitAttributeValue = "LitAttributeValue";
+        public const string Comment = "Comment";
 
     }
 
@@ -52,6 +53,10 @@ namespace HtmlForFSharp
         [Export(typeof(ClassificationTypeDefinition))]
         [Name(FormatNames.LitAttributeValue)]
         internal static ClassificationTypeDefinition LitAttributeValue = null;
+
+        [Export(typeof(ClassificationTypeDefinition))]
+        [Name(FormatNames.Comment)]
+        internal static ClassificationTypeDefinition Comment = null;
     }
 
     // When JS file is opened, the format definitions are created
@@ -178,6 +183,22 @@ namespace HtmlForFSharp
             DisplayName = "Lit HTML Template Lit Special Attribute Value";
             ForegroundColor = ThemeColorHelper.IsThemeLight() ? Colors.DarkGreen :
                                                               Colors.GreenYellow;
+        }
+    }
+
+
+    [Export(typeof(EditorFormatDefinition))]
+    [ClassificationType(ClassificationTypeNames = FormatNames.Comment)]
+    [Name(FormatNames.Comment)]
+    [UserVisible(true)]
+    [Order(After = Priority.High)]
+    internal sealed class HtmlCommentFormatDefinition : ClassificationFormatDefinition
+    {
+        public HtmlCommentFormatDefinition()
+        {
+            DisplayName = "HTML Comment";
+            ForegroundColor = ThemeColorHelper.IsThemeLight() ? Colors.DarkRed :
+                                                              Colors.DarkGreen;
         }
     }
 
