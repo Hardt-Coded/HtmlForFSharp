@@ -11,7 +11,7 @@ namespace HtmlForFSharp
         public const string Name = "Html for F# (Lit Template)";
         public const string Description = @"Hightlighting HTML String for (Lit) HTML String Templates";
         public const string Language = "en-US";
-        public const string Version = "0.0.3";
+        public const string Version = "0.0.4";
         public const string Author = "Daniel Hardt";
         public const string Tags = "html, fable, fsharp, fable-lit, lit";
     }
