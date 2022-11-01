@@ -61,6 +61,13 @@ namespace HtmlForFSharp
                             ? text.Substring(innerStringStart).IndexOf("\"\"\"")
                             // end of line
                             : text.Substring(innerStringStart).IndexOf("\r\n");
+                        var toTrimText = 
+                            text.Substring(innerStringStart, innerStringEnd);
+                        var removeCharsCount =
+                            toTrimText.Trim().EndsWith("\"")
+                            ? toTrimText.Length - toTrimText.LastIndexOf('"')
+                            : 0;
+                        innerStringEnd = innerStringEnd - removeCharsCount;
                         innerStringEnd = innerStringEnd < 0 ? text.Length - 1 : innerStringEnd;
                         return new SnapshotSpan(snapshot, innerStringStart, innerStringEnd);
                     }
@@ -77,55 +84,41 @@ namespace HtmlForFSharp
 
         public IList<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
         {
+
+
+
             // Reset HTML State
             var htmlTemplateSpans = GetHtmlTemplateSpans(span.Snapshot);
-            var isInsideHtmlTemplate = htmlTemplateSpans.Any(x => x.OverlapsWith(span));
 
-            (currentStringType, state) =
-                isInsideHtmlTemplate
-                ? (StringType.InterpolatedMultiLine, state)
-                : (StringType.Unknown, State.Default);
+            var stringSpans =
+                _classifier.GetClassificationSpans(span)
+                .Where(cs => cs.ClassificationType.Classification.ToLower() == "string")
+                .Select(cs => cs.Span)
+                .ToList();
 
-            var result = new List<ClassificationSpan>();
-            var spanText = span.GetText();
+            var effectedHtmlSpans =
+                htmlTemplateSpans.
+                    Where(hs =>
+                        stringSpans.Any(sspan => hs.OverlapsWith(sspan))
+                    )
+                    .ToList();
 
-            var spans = _classifier.GetClassificationSpans(span);
-            if (!isInsideHtmlTemplate)
-                return result;
+            //var isInsideHtmlTemplate = htmlTemplateSpans.Any(x => x.OverlapsWith(span));
+            //var htmlTemplatesAreCurrent = htmlTemplateSpans.Where(x => x.OverlapsWith(span));
 
-            spans = 
-                spans
-                .Where(s => htmlTemplateSpans.Any(x => x.OverlapsWith(s.Span))).ToList();
+            var classifications =
+                    effectedHtmlSpans
+                        .SelectMany(htmlSpans =>
+                            Parser.HtmlParser.runHtmlParser(htmlSpans,
+                                _htmlAttributeValueType,
+                                _htmlLitAttributeValueType,
+                                _htmlComment,
+                                htmlSpans.GetText()
+                    ))
+                    .ToList();
 
+            return classifications;
             
-            foreach (ClassificationSpan cs in spans)
-            {
-                var csClass = cs.ClassificationType.Classification.ToLower();
-
-                // Only apply our rules if we found a string literal
-                if (csClass == "string")
-                {
-                    List<ClassificationSpan> classification = ScanLiteral(cs);
-
-                    if (classification != null)
-                    {
-                        result.AddRange(classification);
-                    }
-                    else
-                    {
-                        result.Add(cs);
-                    }
-                    
-                }
-                else
-                {
-                    result.Add(cs);
-                }
-                
-
-            }
-            
-            return result;
         }
 
         private enum State
