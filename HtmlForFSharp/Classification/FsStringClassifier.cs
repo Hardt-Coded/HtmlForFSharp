@@ -113,6 +113,7 @@ namespace HtmlForFSharp
                                 _htmlAttributeValueType,
                                 _htmlLitAttributeValueType,
                                 _htmlComment,
+                                _htmlElementType,
                                 htmlSpans.GetText()
                     ))
                     .ToList();
